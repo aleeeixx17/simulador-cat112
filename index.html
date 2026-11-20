@@ -16,13 +16,18 @@
         <small>Módulo de Teleemergencias</small>
       </div>
     </div>
+
     <div class="role-selector">
       <button class="role-btn" data-role="alertante">📱 Alertante</button>
       <button class="role-btn active" data-role="demanda">🎧 Op. Demanda</button>
       <button class="role-btn" data-role="respuesta">🚨 Op. Respuesta</button>
     </div>
+
     <div class="status-bar">
-      <span id="peer-status">Conectando centralita...</span>
+      <button id="btn-test-audio" class="btn-audio-test" title="Pulsa aquí primero para activar el sonido">
+        🔊 Activar / Probar Audio
+      </button>
+      <span id="peer-status">🟢 Online</span>
       <span id="clock">00:00:00</span>
     </div>
   </header>
@@ -56,12 +61,15 @@
           <span class="id-pill">ID Demanda: <strong id="demanda-id">---</strong></span>
         </div>
 
-        <!-- Barra de Simulación Automática -->
+        <!-- Barra de Simulación y Selector de Voz -->
         <div class="sim-toolbar">
-          <button id="btn-sim-call" class="btn-sim">🎲 Simular Llamada Aleatoria</button>
+          <button id="btn-sim-call" class="btn-sim">🎲 Llamada Aleatoria</button>
+          <select id="voice-select" class="voice-select" title="Selecciona la voz del alertante">
+            <option value="">Cargando voces...</option>
+          </select>
           <label class="toggle-guardia">
             <input type="checkbox" id="toggle-auto-calls" />
-            <span>⏱️ Modo Guardia (Auto)</span>
+            <span>⏱️ Guardia Auto</span>
           </label>
         </div>
 
@@ -69,31 +77,37 @@
         <div id="incoming-alert" class="incoming-box hidden">
           <div>
             <span>🔔 <strong>LLAMADA ENTRANTE:</strong> <strong id="caller-number">+34 600 112 999</strong></span>
-            <small id="incoming-type-tag" class="tag-sim">Simulada</small>
+            <small id="incoming-type-tag" class="tag-sim">Voz IA</small>
           </div>
-          <button id="btn-answer" class="btn-success">Descolgar</button>
+          <button id="btn-answer" class="btn-success">🎧 Descolgar</button>
         </div>
 
-        <!-- Panel de llamada activa + Interrogatorio + Transferencia -->
+        <!-- Panel de llamada activa por voz -->
         <div id="demanda-active-call" class="active-call-box hidden">
           <div class="call-live-header">
             <span>🟢 <strong>En curso</strong> · <span id="call-timer">00:00</span></span>
             <button id="btn-demanda-hangup" class="btn-danger-sm">Colgar</button>
           </div>
 
-          <!-- Controles de voz IA (solo aparecen en llamadas simuladas) -->
+          <!-- Estado de conversación por voz -->
           <div id="sim-caller-controls" class="sim-qa-box hidden">
-            <div class="sim-qa-header">
-              <span>🗣️ Interrogatorio al alertante:</span>
-              <button type="button" id="btn-toggle-subs" class="btn-mini">📝 Subtítulos</button>
+            <div id="voice-live-status" class="voice-status-banner">
+              🎙️ Habla por tu micrófono para preguntar al alertante...
             </div>
-            <div class="sim-qa-buttons">
-              <button type="button" id="btn-repeat" class="btn-qa">🔁 Repetir</button>
-              <button type="button" id="btn-ask-estado" class="btn-qa">🏥 ¿Estado/Heridos?</button>
-              <button type="button" id="btn-ask-ubicacion" class="btn-qa">📍 ¿Dirección exacta?</button>
-              <button type="button" id="btn-ask-riesgos" class="btn-qa">⚠️ ¿Riesgos?</button>
+            <div id="operator-transcript" class="transcript-line">
+              Tu micrófono: <em>(esperando que hables...)</em>
             </div>
-            <div id="sim-subtitle-box" class="subtitle-box hidden"></div>
+
+            <!-- Botones de respaldo por si no hay micrófono -->
+            <details class="backup-controls">
+              <summary>Ver botones rápidos de respaldo (si no tienes micrófono)</summary>
+              <div class="sim-qa-buttons">
+                <button type="button" id="btn-repeat" class="btn-qa">🔁 Repetir</button>
+                <button type="button" id="btn-ask-estado" class="btn-qa">🏥 ¿Estado/Heridos?</button>
+                <button type="button" id="btn-ask-ubicacion" class="btn-qa">📍 ¿Dirección exacta?</button>
+                <button type="button" id="btn-ask-riesgos" class="btn-qa">⚠️ ¿Riesgos?</button>
+              </div>
+            </details>
           </div>
 
           <!-- Transferencia a Respuesta -->
@@ -107,7 +121,7 @@
         </div>
 
         <div id="map" class="map-box"></div>
-        <div class="aml-info" id="aml-box">AML: Esperando llamada entrante...</div>
+        <div class="aml-info" id="aml-box">AML: Pulsa "Activar / Probar Audio" arriba y luego "Llamada Aleatoria".</div>
       </section>
 
       <section class="panel">
@@ -129,7 +143,7 @@
           </div>
 
           <label>Localización exacta (Municipio / Vía / Ref.)</label>
-          <input type="text" id="f-direccion" placeholder="Confirmar dirección con el alertante..." required />
+          <input type="text" id="f-direccion" placeholder="Confirma la dirección hablando con el alertante..." required />
 
           <div class="form-row">
             <div>
@@ -148,7 +162,7 @@
           </div>
 
           <label>Preguntas clave de protocolo (Relato de los hechos)</label>
-          <textarea id="f-relato" rows="4" placeholder="¿Qué ocurre? ¿Cuántos afectados? ¿Consciente y respira? ¿Riesgos añadidos?" required></textarea>
+          <textarea id="f-relato" rows="4" placeholder="Anota aquí lo que te cuente el alertante por voz..." required></textarea>
 
           <button type="submit" class="btn-primary">📤 Despachar Carta a Sala de Respuesta</button>
         </form>
@@ -164,13 +178,11 @@
         <span class="id-pill">ID Puesto Respuesta: <strong id="respuesta-id">---</strong></span>
       </div>
 
-      <!-- Aviso de llamada transferida desde Demanda -->
       <div id="respuesta-incoming-alert" class="incoming-box transfer-alert hidden">
         <span>📲 <strong>LLAMADA TRANSFERIDA DESDE DEMANDA</strong> <small id="transfer-inc-badge"></small></span>
         <button id="btn-respuesta-answer" class="btn-success">🎧 Atender llamada</button>
       </div>
 
-      <!-- Llamada activa en Respuesta -->
       <div id="respuesta-active-call" class="active-call-box hidden">
         <div class="call-live-header">
           <span>🟢 <strong>En comunicación directa con Alertante (Transferida)</strong></span>
@@ -184,7 +196,7 @@
     </section>
   </main>
 
-  <audio id="remote-audio" autoplay></audio>
+  <audio id="remote-audio" autoplay playsinline></audio>
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
   <script src="https://unpkg.com/peerjs@1.5.4/dist/peerjs.min.js"></script>
   <script src="app.js"></script>
