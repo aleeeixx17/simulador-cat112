@@ -16,7 +16,7 @@ const ESCENARIOS_CAT112 = [
     qa: {
       estado: 'Está tumbado boca arriba, no abre los ojos cuando le hablo y parece que no respira bien, hace como boqueadas.',
       ubicacion: 'Estamos justo delante de la farmacia de Carrer d’Aragó 245, casi esquina con calle Balmes, en Barcelona.',
-      riesgos: 'Ningún riesgo alrededor, estamos en la acera, pero hay mucha gente mirando alrededor.'
+      riesgos: 'Ningún riesgo alrededor, estamos en la acera, pero hay mucha gente mirando.'
     }
   },
   {
@@ -78,30 +78,6 @@ const ESCENARIOS_CAT112 = [
       ubicacion: 'Estamos en la Rambla de Sabadell número 88, delante de una cafetería.',
       riesgos: 'Ningún riesgo externo, estamos en la calle esperando ayuda.'
     }
-  },
-  {
-    coords: [41.5632, 2.0089],
-    radius: 50,
-    amlAddress: 'Carretera de Matadepera, Terrassa',
-    exactAddress: 'Carretera de Matadepera esquina Avinguda Abat Marcet, Terrassa',
-    intro: 'Acaba de pasar un coche saltándose el semáforo en rojo y ha atropellado a un ciclista, el coche se ha dado a la fuga.',
-    qa: {
-      estado: 'El ciclista está consciente en el suelo pero no se puede mover y se queja mucho de la cadera y la cabeza, llevaba casco.',
-      ubicacion: 'En el cruce de Carretera de Matadepera con Avinguda Abat Marcet, en Terrassa.',
-      riesgos: 'El herido está en medio del carril izquierdo, estamos desviando los coches como podemos.'
-    }
-  },
-  {
-    coords: [41.1558, 1.1069],
-    radius: 80,
-    amlAddress: 'Urbanització Blancafort / Zona boscosa, Reus',
-    exactAddress: 'Camí de la Pedrera, junto a Urbanització Blancafort, Reus',
-    intro: 'Llamo porque veo una columna de humo gris muy densa y llamas saliendo de unos matorrales pegados a unos chalets.',
-    qa: {
-      estado: 'De momento no veo personas heridas, los vecinos están saliendo de las casas con mangueras.',
-      ubicacion: 'Es en el Camí de la Pedrera, justo detrás de la Urbanització Blancafort de Reus.',
-      riesgos: 'Hace bastante viento y el fuego avanza muy rápido hacia los pinos y las vallas de las casas.'
-    }
   }
 ];
 
@@ -110,6 +86,43 @@ function generarTelefonoAleatorio() {
   const resto = Math.floor(10000000 + Math.random() * 90000000).toString();
   return `+34 ${prefijo}${resto.slice(0, 2)} ${resto.slice(2, 5)} ${resto.slice(5, 8)}`;
 }
+
+// ==========================================
+// GESTIÓN DE VOCES DEL SISTEMA (FIX SILENCIO)
+// ==========================================
+let availableVoices = [];
+const voiceSelect = document.getElementById('voice-select');
+
+function cargarVoces() {
+  if (!('speechSynthesis' in window)) {
+    voiceSelect.innerHTML = '<option value="">Sin soporte de voz</option>';
+    return;
+  }
+  const all = window.speechSynthesis.getVoices();
+  if (!all.length) return;
+
+  // Priorizar voces en español o catalán
+  const esVoices = all.filter(v => v.lang.toLowerCase().startsWith('es') || v.lang.toLowerCase().startsWith('ca'));
+  availableVoices = esVoices.length ? esVoices : all;
+
+  voiceSelect.innerHTML = availableVoices
+    .map((v, idx) => `<option value="${idx}">${v.name} (${v.lang})</option>`)
+    .join('');
+}
+
+if ('speechSynthesis' in window) {
+  cargarVoces();
+  window.speechSynthesis.onvoiceschanged = cargarVoces;
+}
+
+// Botón para desbloquear y probar el audio manualmente
+document.getElementById('btn-test-audio').addEventListener('click', () => {
+  const btn = document.getElementById('btn-test-audio');
+  btn.classList.add('ready');
+  btn.textContent = '🔊 Audio Activado';
+  cargarVoces();
+  hablarAlertante('Prueba de sonido correcta. Centralita ciento doce lista para recibir llamadas.');
+});
 
 // ==========================================
 // SINTETIZADOR DE TONO DE LLAMADA (WEB AUDIO)
@@ -121,13 +134,15 @@ function startRingtone() {
   stopRingtone();
   try {
     audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+    if (audioCtx.state === 'suspended') audioCtx.resume();
+
     const playTone = () => {
       if (!audioCtx) return;
       const osc = audioCtx.createOscillator();
       const gain = audioCtx.createGain();
       osc.type = 'sine';
-      osc.frequency.setValueAtTime(425, audioCtx.currentTime); // Tono estándar europeo 425Hz
-      gain.gain.setValueAtTime(0.08, audioCtx.currentTime);
+      osc.frequency.setValueAtTime(425, audioCtx.currentTime);
+      gain.gain.setValueAtTime(0.1, audioCtx.currentTime);
       gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 1.1);
       osc.connect(gain);
       gain.connect(audioCtx.destination);
@@ -135,9 +150,9 @@ function startRingtone() {
       osc.stop(audioCtx.currentTime + 1.1);
     };
     playTone();
-    ringInterval = setInterval(playTone, 2500);
+    ringInterval = setInterval(playTone, 2400);
   } catch (e) {
-    console.warn('AudioContext bloqueado hasta interacción:', e);
+    console.warn('AudioContext esperando clic:', e);
   }
 }
 
@@ -153,29 +168,137 @@ function stopRingtone() {
 }
 
 // ==========================================
-// SÍNTESIS DE VOZ DEL ALERTANTE (WEB SPEECH)
+// RECONOCIMIENTO DE VOZ (TU MICRÓFONO -> IA)
 // ==========================================
-function hablarAlertante(texto) {
-  const subBox = document.getElementById('sim-subtitle-box');
-  subBox.textContent = `🗣️ Alertante: "${texto}"`;
+const SpeechRecognitionAPI = window.SpeechRecognition || window.webkitSpeechRecognition;
+let recognition = null;
+let isAiSpeaking = false;
+let shouldListenOperator = false;
 
-  if (!('speechSynthesis' in window)) return;
-  window.speechSynthesis.cancel();
+if (SpeechRecognitionAPI) {
+  recognition = new SpeechRecognitionAPI();
+  recognition.lang = 'es-ES';
+  recognition.continuous = true;
+  recognition.interimResults = false;
 
-  const utterance = new SpeechSynthesisUtterance(texto);
-  utterance.lang = 'es-ES';
-  utterance.rate = 1.06; // Ritmo ligeramente acelerado por urgencia
-  utterance.pitch = 1.05;
+  recognition.onresult = event => {
+    if (isAiSpeaking || !activeSimScenario) return;
+    const lastResult = event.results[event.results.length - 1];
+    if (!lastResult.isFinal) return;
 
-  const voices = window.speechSynthesis.getVoices();
-  const esVoice = voices.find(v => v.lang.includes('es-ES')) || voices.find(v => v.lang.includes('es'));
-  if (esVoice) utterance.voice = esVoice;
+    const spokenText = lastResult[0].transcript.trim();
+    document.getElementById('operator-transcript').innerHTML = `Tu micrófono: <strong>"${spokenText}"</strong>`;
+    procesarPreguntaOperador(spokenText.toLowerCase());
+  };
 
-  window.speechSynthesis.speak(utterance);
+  recognition.onend = () => {
+    // Reiniciar escucha automáticamente mientras la llamada siga activa y la IA no hable
+    if (shouldListenOperator && !isAiSpeaking) {
+      try { recognition.start(); } catch (e) {}
+    }
+  };
+
+  recognition.onerror = e => {
+    if (e.error === 'not-allowed') {
+      document.getElementById('operator-transcript').textContent = '⚠️ Permiso de micrófono denegado. Usa los botones de respaldo.';
+    }
+  };
+}
+
+function iniciarEscuchaOperador() {
+  shouldListenOperator = true;
+  const banner = document.getElementById('voice-live-status');
+  banner.classList.remove('speaking');
+  banner.textContent = '🎙️ Tu turno: habla por el micrófono para preguntar...';
+  if (recognition && !isAiSpeaking) {
+    try { recognition.start(); } catch (e) {}
+  }
+}
+
+function detenerEscuchaOperador() {
+  shouldListenOperator = false;
+  if (recognition) {
+    try { recognition.stop(); } catch (e) {}
+  }
+}
+
+function procesarPreguntaOperador(texto) {
+  if (!activeSimScenario) return;
+
+  if (/(donde|dónde|direcci|calle|carrer|ubicaci|lugar|sitio|kilometro|kilómetro|municipio|pueblo|ciudad)/.test(texto)) {
+    document.getElementById('f-direccion').value = activeSimScenario.exactAddress;
+    hablarAlertante(activeSimScenario.qa.ubicacion);
+  } else if (/(herido|estado|como esta|cómo está|respira|consciente|sangra|persona|gente|afectado|victima|víctima)/.test(texto)) {
+    hablarAlertante(activeSimScenario.qa.estado);
+  } else if (/(riesgo|peligro|fuego|humo|arma|gas|atrapado|coche|trafico|tráfico)/.test(texto)) {
+    hablarAlertante(activeSimScenario.qa.riesgos);
+  } else if (/(ambulancia|policia|policía|mossos|bombero|camino|ayuda|tranquil|gracias|enviamos|mandamos|vale|acuerdo)/.test(texto)) {
+    hablarAlertante('¡Muchas gracias, por favor que vengan lo antes posible, aquí espero!');
+  } else if (/(repite|repita|otra vez|no te oigo|perdon|perdón|que pasa|qué pasa|ocurre|pasado)/.test(texto)) {
+    hablarAlertante(activeSimScenario.intro);
+  } else {
+    hablarAlertante(`Perdone, con los nervios no le he entendido bien. ${activeSimScenario.intro}`);
+  }
 }
 
 // ==========================================
-// SINCRONIZACIÓN Y ESTADO GLOBAL
+// SÍNTESIS DE VOZ DEL ALERTANTE (CON FIX CHROME)
+// ==========================================
+let speechFallbackTimer = null;
+
+function hablarAlertante(texto) {
+  if (!('speechSynthesis' in window)) {
+    alert('Tu navegador no soporta síntesis de voz. Prueba con Google Chrome o Microsoft Edge.');
+    return;
+  }
+
+  // Pausar micrófono mientras habla el alertante para evitar eco
+  isAiSpeaking = true;
+  if (recognition) {
+    try { recognition.stop(); } catch (e) {}
+  }
+
+  const banner = document.getElementById('voice-live-status');
+  if (banner) {
+    banner.classList.add('speaking');
+    banner.textContent = '🗣️ Alertante hablando...';
+  }
+
+  window.speechSynthesis.cancel();
+  clearTimeout(speechFallbackTimer);
+
+  // Retardo de 80ms obligatorio para evitar el bug silencioso de Chrome tras cancel()
+  setTimeout(() => {
+    window.speechSynthesis.resume();
+    const utterance = new SpeechSynthesisUtterance(texto);
+    utterance.lang = 'es-ES';
+    utterance.volume = 1.0;
+    utterance.rate = 1.04;
+    utterance.pitch = 1.05;
+
+    const selectedIdx = parseInt(voiceSelect.value, 10);
+    if (!isNaN(selectedIdx) && availableVoices[selectedIdx]) {
+      utterance.voice = availableVoices[selectedIdx];
+    }
+
+    const finalizarTurnoVoz = () => {
+      clearTimeout(speechFallbackTimer);
+      isAiSpeaking = false;
+      if (shouldListenOperator) iniciarEscuchaOperador();
+    };
+
+    utterance.onend = finalizarTurnoVoz;
+    utterance.onerror = finalizarTurnoVoz;
+
+    // Seguro por si el navegador no dispara onend
+    speechFallbackTimer = setTimeout(finalizarTurnoVoz, Math.max(4000, texto.length * 85));
+
+    window.speechSynthesis.speak(utterance);
+  }, 80);
+}
+
+// ==========================================
+// SINCRONIZACIÓN Y WEBRTC
 // ==========================================
 const channel = new BroadcastChannel('cat112_sala');
 let incidents = JSON.parse(localStorage.getItem('cat112_incidents') || '[]');
@@ -191,8 +314,7 @@ let alertanteCall = null;
 let demandaCall = null;
 let respuestaCall = null;
 
-// Variables de llamada simulada
-let activeCallType = null; // 'webrtc' | 'simulated' | null
+let activeCallType = null;
 let pendingSimScenario = null;
 let activeSimScenario = null;
 let callTimerInterval = null;
@@ -200,13 +322,12 @@ let callSeconds = 0;
 let autoCallTimeout = null;
 
 peer.on('open', id => {
-  document.getElementById('peer-status').textContent = '🟢 Centralita VoIP Online';
+  document.getElementById('peer-status').textContent = '🟢 Online';
   document.getElementById('my-peer-id').textContent = id;
   document.getElementById('demanda-id').textContent = id;
   document.getElementById('respuesta-id').textContent = id;
 });
 
-// Cambio de vistas por rol
 document.querySelectorAll('.role-btn').forEach(btn => {
   btn.addEventListener('click', () => {
     document.querySelectorAll('.role-btn').forEach(b => b.classList.remove('active'));
@@ -222,7 +343,7 @@ document.querySelectorAll('.role-btn').forEach(btn => {
   });
 });
 
-// Mapa Leaflet para AML
+// Mapa Leaflet
 const map = L.map('map').setView([41.3874, 2.1686], 13);
 L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
   attribution: '© OpenStreetMap'
@@ -233,7 +354,7 @@ function mostrarAML(lat, lng, radius, address) {
   map.setView([lat, lng], 16);
   if (amlCircle) map.removeLayer(amlCircle);
   amlCircle = L.circle([lat, lng], { radius, color: '#ef4444' }).addTo(map);
-  document.getElementById('aml-box').textContent = `AML recibido: ${address} (Radio precisión: ${radius}m)`;
+  document.getElementById('aml-box').textContent = `AML recibido: ${address} (Precisión: ${radius}m)`;
   document.getElementById('f-direccion').value = address;
 }
 
@@ -257,7 +378,7 @@ function detenerCronometroLlamada() {
 }
 
 // ==========================================
-// GENERADOR DE LLAMADAS ALEATORIAS EN DEMANDA
+// LLAMADAS ALEATORIAS EN DEMANDA
 // ==========================================
 function dispararLlamadaSimulada() {
   if (activeCallType || pendingSimScenario || demandaCall) {
@@ -271,7 +392,7 @@ function dispararLlamadaSimulada() {
   };
 
   document.getElementById('caller-number').textContent = pendingSimScenario.telefono;
-  document.getElementById('incoming-type-tag').textContent = 'Simulada IA';
+  document.getElementById('incoming-type-tag').textContent = 'Voz IA';
   document.getElementById('incoming-type-tag').classList.remove('hidden');
   document.getElementById('incoming-alert').classList.remove('hidden');
 
@@ -287,7 +408,6 @@ function dispararLlamadaSimulada() {
 
 document.getElementById('btn-sim-call').addEventListener('click', dispararLlamadaSimulada);
 
-// Modo Guardia Automático
 document.getElementById('toggle-auto-calls').addEventListener('change', e => {
   if (e.target.checked) {
     programarSiguienteLlamadaAuto();
@@ -300,7 +420,7 @@ function programarSiguienteLlamadaAuto() {
   clearTimeout(autoCallTimeout);
   if (!document.getElementById('toggle-auto-calls').checked) return;
 
-  const delayMs = Math.floor(20000 + Math.random() * 20000); // Entre 20 y 40 segundos
+  const delayMs = Math.floor(20000 + Math.random() * 20000);
   autoCallTimeout = setTimeout(() => {
     if (!activeCallType && !pendingSimScenario && !demandaCall) {
       dispararLlamadaSimulada();
@@ -309,7 +429,7 @@ function programarSiguienteLlamadaAuto() {
   }, delayMs);
 }
 
-// Botones de interrogatorio rápido al alertante simulado
+// Botones de respaldo
 document.getElementById('btn-repeat').addEventListener('click', () => {
   if (activeSimScenario) hablarAlertante(activeSimScenario.intro);
 });
@@ -325,13 +445,18 @@ document.getElementById('btn-ask-ubicacion').addEventListener('click', () => {
 document.getElementById('btn-ask-riesgos').addEventListener('click', () => {
   if (activeSimScenario) hablarAlertante(activeSimScenario.qa.riesgos);
 });
-document.getElementById('btn-toggle-subs').addEventListener('click', () => {
-  document.getElementById('sim-subtitle-box').classList.toggle('hidden');
-});
 
 // ==========================================
-// 1. LÓGICA DEL ALERTANTE MANUAL (WEBRTC)
+// ALERTANTE MANUAL (WEBRTC)
 // ==========================================
+function reproducirStreamRemoto(remoteStream) {
+  const audioEl = document.getElementById('remote-audio');
+  audioEl.srcObject = remoteStream;
+  audioEl.muted = false;
+  audioEl.volume = 1.0;
+  audioEl.play().catch(err => console.warn('Pulsa "Activar Audio" para permitir sonido:', err));
+}
+
 document.getElementById('btn-call-112').addEventListener('click', async () => {
   const targetId = document.getElementById('target-operator-id').value.trim();
   if (!targetId) return alert('Introduce el ID del Operador de Demanda');
@@ -352,7 +477,7 @@ function iniciarLlamadaSaliente(targetId, metadata, statusText) {
     document.getElementById('call-state').textContent = metadata.transferred
       ? '🟢 En comunicación con Op. Respuesta (Transferida)'
       : '🟢 En comunicación con Op. Demanda';
-    document.getElementById('remote-audio').srcObject = remoteStream;
+    reproducirStreamRemoto(remoteStream);
   });
 
   alertanteCall.on('close', () => {
@@ -382,7 +507,7 @@ document.getElementById('btn-hangup').addEventListener('click', () => {
 });
 
 // ==========================================
-// 2. RECEPCIÓN DE LLAMADAS (DEMANDA Y RESPUESTA)
+// RECEPCIÓN DE LLAMADAS (DEMANDA Y RESPUESTA)
 // ==========================================
 peer.on('call', call => {
   const meta = call.metadata || {};
@@ -406,7 +531,6 @@ peer.on('call', call => {
   }
 });
 
-// Descolgar en Demanda (Soporta tanto llamada Simulada como WebRTC real)
 document.getElementById('btn-answer').addEventListener('click', async () => {
   stopRingtone();
   document.getElementById('incoming-alert').classList.add('hidden');
@@ -419,6 +543,9 @@ document.getElementById('btn-answer').addEventListener('click', async () => {
     document.getElementById('demanda-active-call').classList.remove('hidden');
     document.getElementById('sim-caller-controls').classList.remove('hidden');
     iniciarCronometroLlamada();
+
+    // Activar escucha de micrófono y hacer que el alertante hable primero
+    shouldListenOperator = true;
     hablarAlertante(activeSimScenario.intro);
     return;
   }
@@ -431,10 +558,7 @@ document.getElementById('btn-answer').addEventListener('click', async () => {
     document.getElementById('sim-caller-controls').classList.add('hidden');
     iniciarCronometroLlamada();
 
-    demandaCall.on('stream', remoteStream => {
-      document.getElementById('remote-audio').srcObject = remoteStream;
-    });
-
+    demandaCall.on('stream', reproducirStreamRemoto);
     demandaCall.on('close', cerrarLlamadaDemanda);
   }
 });
@@ -442,6 +566,8 @@ document.getElementById('btn-answer').addEventListener('click', async () => {
 function cerrarLlamadaDemanda() {
   stopRingtone();
   detenerCronometroLlamada();
+  detenerEscuchaOperador();
+  clearTimeout(speechFallbackTimer);
   if ('speechSynthesis' in window) window.speechSynthesis.cancel();
   if (demandaCall) {
     demandaCall.close();
@@ -449,17 +575,17 @@ function cerrarLlamadaDemanda() {
   }
   activeCallType = null;
   activeSimScenario = null;
+  isAiSpeaking = false;
   document.getElementById('demanda-active-call').classList.add('hidden');
   document.getElementById('sim-caller-controls').classList.add('hidden');
 }
 
 document.getElementById('btn-demanda-hangup').addEventListener('click', cerrarLlamadaDemanda);
 
-// BOTÓN DE TRANSFERENCIA (DEMANDA -> RESPUESTA)
+// TRANSFERENCIA (DEMANDA -> RESPUESTA)
 document.getElementById('btn-transfer').addEventListener('click', () => {
   if (!activeCallType) return alert('No hay ninguna llamada activa para transferir.');
 
-  // Si es llamada simulada, la transferimos por el canal de sala a Respuesta
   if (activeCallType === 'simulated') {
     const scenarioToPass = { ...activeSimScenario };
     const incId = lastIncidentId || '';
@@ -468,7 +594,7 @@ document.getElementById('btn-transfer').addEventListener('click', () => {
       const inc = incidents.find(i => i.id === lastIncidentId);
       if (inc) {
         const now = new Date().toLocaleTimeString('es-ES');
-        inc.logs.push(`${now} - Llamada simulada transferida a Sala de Respuesta`);
+        inc.logs.push(`${now} - Llamada transferida a Sala de Respuesta`);
         saveAndSync();
       }
     }
@@ -479,11 +605,10 @@ document.getElementById('btn-transfer').addEventListener('click', () => {
       incidentId: incId
     });
     cerrarLlamadaDemanda();
-    alert('Llamada simulada transferida a la pestaña de Op. Respuesta.');
+    alert('Llamada transferida a la pestaña de Op. Respuesta.');
     return;
   }
 
-  // Si es llamada WebRTC real entre dos ordenadores
   const respuestaTargetId = document.getElementById('transfer-target-id').value.trim();
   if (!respuestaTargetId) return alert('Introduce el ID del Puesto de Respuesta.');
 
@@ -510,7 +635,7 @@ document.getElementById('btn-transfer').addEventListener('click', () => {
   });
 });
 
-// Descolgar en Respuesta (Llamada transferida)
+// Descolgar en Respuesta
 let pendingRespuestaSim = null;
 
 document.getElementById('btn-respuesta-answer').addEventListener('click', async () => {
@@ -529,10 +654,7 @@ document.getElementById('btn-respuesta-answer').addEventListener('click', async 
   respuestaCall.answer(stream);
   document.getElementById('respuesta-active-call').classList.remove('hidden');
 
-  respuestaCall.on('stream', remoteStream => {
-    document.getElementById('remote-audio').srcObject = remoteStream;
-  });
-
+  respuestaCall.on('stream', reproducirStreamRemoto);
   respuestaCall.on('close', () => {
     document.getElementById('respuesta-active-call').classList.add('hidden');
     respuestaCall = null;
@@ -546,7 +668,7 @@ document.getElementById('btn-respuesta-hangup').addEventListener('click', () => 
 });
 
 // ==========================================
-// 3. CARTA DE LLAMADA Y SINCRONIZACIÓN
+// CARTA DE LLAMADA Y SINCRONIZACIÓN
 // ==========================================
 document.getElementById('carta-form').addEventListener('submit', e => {
   e.preventDefault();
