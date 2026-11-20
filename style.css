@@ -25,6 +25,13 @@ body { margin: 0; background: var(--bg); color: var(--text); }
 }
 .brand small { display: block; color: var(--muted); font-size: 0.75rem; }
 
+.status-bar { display: flex; align-items: center; gap: 0.75rem; font-size: 0.85rem; }
+.btn-audio-test {
+  background: #0284c7; color: white; padding: 0.45rem 0.85rem;
+  border-radius: 6px; font-size: 0.82rem; border: 1px solid #38bdf8;
+}
+.btn-audio-test.ready { background: #15803d; border-color: #4ade80; }
+
 .role-btn {
   background: var(--panel); color: var(--text); border: 1px solid var(--border);
   padding: 0.5rem 1rem; border-radius: 6px; cursor: pointer; margin: 0 0.2rem;
@@ -44,19 +51,17 @@ body { margin: 0; background: var(--bg); color: var(--text); }
 .panel-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.75rem; }
 .id-pill { background: #0f172a; padding: 0.35rem 0.7rem; border-radius: 6px; font-size: 0.85rem; border: 1px solid var(--border); }
 
-/* Barra simulación */
 .sim-toolbar {
-  display: flex; justify-content: space-between; align-items: center; gap: 0.75rem;
-  background: #0f172a; padding: 0.6rem 0.8rem; border-radius: 8px;
+  display: flex; justify-content: space-between; align-items: center; gap: 0.5rem;
+  background: #0f172a; padding: 0.6rem 0.75rem; border-radius: 8px;
   border: 1px solid var(--border); margin-bottom: 0.75rem; flex-wrap: wrap;
 }
-.btn-sim {
-  background: var(--purple); color: white; padding: 0.55rem 0.9rem; font-size: 0.9rem;
-}
+.btn-sim { background: var(--purple); color: white; padding: 0.5rem 0.85rem; font-size: 0.85rem; }
 .btn-sim:hover { background: #6d28d9; }
+.voice-select { width: auto; max-width: 185px; padding: 0.4rem; font-size: 0.78rem; }
 .toggle-guardia {
-  display: flex; align-items: center; gap: 0.45rem; margin: 0;
-  cursor: pointer; color: #e2e8f0; font-size: 0.85rem;
+  display: flex; align-items: center; gap: 0.4rem; margin: 0;
+  cursor: pointer; color: #e2e8f0; font-size: 0.82rem;
 }
 .toggle-guardia input { width: auto; margin: 0; accent-color: var(--red); }
 
@@ -77,10 +82,9 @@ button { cursor: pointer; border: none; border-radius: 6px; font-weight: 600; }
 .btn-secondary { width: 100%; margin-top: 0.5rem; padding: 0.7rem; background: #475569; color: white; }
 .btn-danger-sm { padding: 0.35rem 0.75rem; background: var(--red); color: white; font-size: 0.8rem; }
 .btn-transfer { padding: 0.6rem 1rem; background: var(--amber); color: white; white-space: nowrap; }
-.btn-transfer:hover { background: #b45309; }
 
 .phone-card { max-width: 450px; margin: 2rem auto; background: var(--panel); padding: 1.5rem; border-radius: 12px; }
-.map-box { height: 240px; border-radius: 8px; margin-top: 0.75rem; }
+.map-box { height: 230px; border-radius: 8px; margin-top: 0.75rem; }
 .aml-info { margin-top: 0.5rem; font-size: 0.85rem; color: #38bdf8; }
 
 .incoming-box {
@@ -104,33 +108,30 @@ button { cursor: pointer; border: none; border-radius: 6px; font-weight: 600; }
 }
 .call-live-header { display: flex; justify-content: space-between; align-items: center; }
 
-/* Interrogatorio simulado */
 .sim-qa-box {
   margin-top: 0.65rem; padding-top: 0.65rem; border-top: 1px dashed #15803d;
 }
-.sim-qa-header {
-  display: flex; justify-content: space-between; align-items: center;
-  font-size: 0.8rem; color: #bbf7d0; margin-bottom: 0.4rem;
+.voice-status-banner {
+  background: #020617; color: #4ade80; padding: 0.5rem 0.75rem;
+  border-radius: 6px; font-size: 0.85rem; font-weight: 600;
+  border-left: 4px solid #22c55e;
 }
-.sim-qa-buttons { display: flex; flex-wrap: wrap; gap: 0.35rem; }
+.voice-status-banner.speaking {
+  color: #c084fc; border-left-color: #a855f7;
+}
+.transcript-line {
+  font-size: 0.78rem; color: #bbf7d0; margin-top: 0.4rem;
+}
+.backup-controls { margin-top: 0.5rem; font-size: 0.78rem; color: #94a3b8; }
+.backup-controls summary { cursor: pointer; }
+.sim-qa-buttons { display: flex; flex-wrap: wrap; gap: 0.35rem; margin-top: 0.4rem; }
 .btn-qa {
   background: #14532d; color: #dcfce7; border: 1px solid #22c55e;
   padding: 0.35rem 0.6rem; font-size: 0.78rem;
 }
-.btn-qa:hover { background: #166534; }
-.btn-mini {
-  background: #0f172a; color: #94a3b8; border: 1px solid #334155;
-  padding: 0.2rem 0.5rem; font-size: 0.75rem;
-}
-.subtitle-box {
-  margin-top: 0.5rem; background: #020617; color: #f8fafc;
-  padding: 0.5rem 0.7rem; border-radius: 6px; font-size: 0.82rem;
-  border-left: 3px solid var(--purple); font-style: italic;
-}
 
 .transfer-controls label { margin-top: 0.65rem; color: #bbf7d0; }
 .transfer-row { display: flex; gap: 0.5rem; margin-top: 0.25rem; }
-
 .hidden { display: none !important; }
 
 .incidents-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(340px, 1fr)); gap: 1rem; }
