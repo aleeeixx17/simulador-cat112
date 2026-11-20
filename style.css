@@ -8,6 +8,7 @@
   --green: #16a34a;
   --blue: #2563eb;
   --amber: #d97706;
+  --purple: #7c3aed;
 }
 * { box-sizing: border-box; font-family: system-ui, sans-serif; }
 body { margin: 0; background: var(--bg); color: var(--text); }
@@ -15,6 +16,7 @@ body { margin: 0; background: var(--bg); color: var(--text); }
 .topbar {
   display: flex; justify-content: space-between; align-items: center;
   padding: 0.75rem 1.5rem; background: #020617; border-bottom: 2px solid var(--red);
+  flex-wrap: wrap; gap: 0.5rem;
 }
 .brand { display: flex; align-items: center; gap: 0.75rem; }
 .badge-112 {
@@ -33,12 +35,30 @@ body { margin: 0; background: var(--bg); color: var(--text); }
 .view.active { display: block; }
 
 .grid-2col { display: grid; grid-template-columns: 1fr 1.2fr; gap: 1.5rem; }
+@media (max-width: 900px) { .grid-2col { grid-template-columns: 1fr; } }
+
 .panel {
   background: var(--panel); border: 1px solid var(--border);
   border-radius: 10px; padding: 1.25rem;
 }
 .panel-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.75rem; }
 .id-pill { background: #0f172a; padding: 0.35rem 0.7rem; border-radius: 6px; font-size: 0.85rem; border: 1px solid var(--border); }
+
+/* Barra simulación */
+.sim-toolbar {
+  display: flex; justify-content: space-between; align-items: center; gap: 0.75rem;
+  background: #0f172a; padding: 0.6rem 0.8rem; border-radius: 8px;
+  border: 1px solid var(--border); margin-bottom: 0.75rem; flex-wrap: wrap;
+}
+.btn-sim {
+  background: var(--purple); color: white; padding: 0.55rem 0.9rem; font-size: 0.9rem;
+}
+.btn-sim:hover { background: #6d28d9; }
+.toggle-guardia {
+  display: flex; align-items: center; gap: 0.45rem; margin: 0;
+  cursor: pointer; color: #e2e8f0; font-size: 0.85rem;
+}
+.toggle-guardia input { width: auto; margin: 0; accent-color: var(--red); }
 
 label { display: block; margin-top: 0.75rem; margin-bottom: 0.25rem; font-size: 0.85rem; color: var(--muted); }
 input, select, textarea {
@@ -66,16 +86,49 @@ button { cursor: pointer; border: none; border-radius: 6px; font-weight: 600; }
 .incoming-box {
   background: #450a0a; border: 1px solid var(--red); padding: 0.75rem;
   border-radius: 8px; display: flex; justify-content: space-between; align-items: center;
-  margin-bottom: 0.75rem;
+  margin-bottom: 0.75rem; animation: pulseBorder 1.2s infinite;
 }
-.transfer-alert { background: #451a03; border-color: var(--amber); }
+@keyframes pulseBorder {
+  0%, 100% { border-color: var(--red); }
+  50% { border-color: #fca5a5; }
+}
+.tag-sim {
+  background: var(--purple); color: white; padding: 0.15rem 0.45rem;
+  border-radius: 4px; font-size: 0.72rem; margin-left: 0.4rem;
+}
+.transfer-alert { background: #451a03; border-color: var(--amber); animation: none; }
 
 .active-call-box {
   background: #052e16; border: 1px solid var(--green); padding: 0.75rem;
   border-radius: 8px; margin-bottom: 0.75rem;
 }
 .call-live-header { display: flex; justify-content: space-between; align-items: center; }
-.transfer-controls label { margin-top: 0.5rem; color: #bbf7d0; }
+
+/* Interrogatorio simulado */
+.sim-qa-box {
+  margin-top: 0.65rem; padding-top: 0.65rem; border-top: 1px dashed #15803d;
+}
+.sim-qa-header {
+  display: flex; justify-content: space-between; align-items: center;
+  font-size: 0.8rem; color: #bbf7d0; margin-bottom: 0.4rem;
+}
+.sim-qa-buttons { display: flex; flex-wrap: wrap; gap: 0.35rem; }
+.btn-qa {
+  background: #14532d; color: #dcfce7; border: 1px solid #22c55e;
+  padding: 0.35rem 0.6rem; font-size: 0.78rem;
+}
+.btn-qa:hover { background: #166534; }
+.btn-mini {
+  background: #0f172a; color: #94a3b8; border: 1px solid #334155;
+  padding: 0.2rem 0.5rem; font-size: 0.75rem;
+}
+.subtitle-box {
+  margin-top: 0.5rem; background: #020617; color: #f8fafc;
+  padding: 0.5rem 0.7rem; border-radius: 6px; font-size: 0.82rem;
+  border-left: 3px solid var(--purple); font-style: italic;
+}
+
+.transfer-controls label { margin-top: 0.65rem; color: #bbf7d0; }
 .transfer-row { display: flex; gap: 0.5rem; margin-top: 0.25rem; }
 
 .hidden { display: none !important; }
