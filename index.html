@@ -17,8 +17,8 @@
       </div>
     </div>
     <div class="role-selector">
-      <button class="role-btn active" data-role="alertante">📱 Alertante</button>
-      <button class="role-btn" data-role="demanda">🎧 Op. Demanda</button>
+      <button class="role-btn" data-role="alertante">📱 Alertante</button>
+      <button class="role-btn active" data-role="demanda">🎧 Op. Demanda</button>
       <button class="role-btn" data-role="respuesta">🚨 Op. Respuesta</button>
     </div>
     <div class="status-bar">
@@ -27,10 +27,10 @@
     </div>
   </header>
 
-  <!-- VISTA 1: ALERTANTE -->
-  <main id="view-alertante" class="view active">
+  <!-- VISTA 1: ALERTANTE MANUAL -->
+  <main id="view-alertante" class="view">
     <div class="phone-card">
-      <h2>Terminal Móvil Alertante</h2>
+      <h2>Terminal Móvil Alertante (Manual)</h2>
       <p>Tu ID de centralita: <strong id="my-peer-id">---</strong></p>
       <label>ID del Operador de Demanda (pídelo al compañero):</label>
       <input type="text" id="target-operator-id" placeholder="Ej: cat112-402" />
@@ -48,7 +48,7 @@
   </main>
 
   <!-- VISTA 2: OPERADOR DE DEMANDA -->
-  <main id="view-demanda" class="view">
+  <main id="view-demanda" class="view active">
     <div class="grid-2col">
       <section class="panel">
         <div class="panel-header">
@@ -56,18 +56,47 @@
           <span class="id-pill">ID Demanda: <strong id="demanda-id">---</strong></span>
         </div>
 
+        <!-- Barra de Simulación Automática -->
+        <div class="sim-toolbar">
+          <button id="btn-sim-call" class="btn-sim">🎲 Simular Llamada Aleatoria</button>
+          <label class="toggle-guardia">
+            <input type="checkbox" id="toggle-auto-calls" />
+            <span>⏱️ Modo Guardia (Auto)</span>
+          </label>
+        </div>
+
         <!-- Aviso de llamada entrante -->
         <div id="incoming-alert" class="incoming-box hidden">
-          <span>🔔 LLAMADA ENTRANTE: <strong id="caller-number">+34 600 112 999</strong></span>
+          <div>
+            <span>🔔 <strong>LLAMADA ENTRANTE:</strong> <strong id="caller-number">+34 600 112 999</strong></span>
+            <small id="incoming-type-tag" class="tag-sim">Simulada</small>
+          </div>
           <button id="btn-answer" class="btn-success">Descolgar</button>
         </div>
 
-        <!-- Panel de llamada activa + Transferencia -->
+        <!-- Panel de llamada activa + Interrogatorio + Transferencia -->
         <div id="demanda-active-call" class="active-call-box hidden">
           <div class="call-live-header">
-            <span>🟢 <strong>En curso con Alertante</strong></span>
+            <span>🟢 <strong>En curso</strong> · <span id="call-timer">00:00</span></span>
             <button id="btn-demanda-hangup" class="btn-danger-sm">Colgar</button>
           </div>
+
+          <!-- Controles de voz IA (solo aparecen en llamadas simuladas) -->
+          <div id="sim-caller-controls" class="sim-qa-box hidden">
+            <div class="sim-qa-header">
+              <span>🗣️ Interrogatorio al alertante:</span>
+              <button type="button" id="btn-toggle-subs" class="btn-mini">📝 Subtítulos</button>
+            </div>
+            <div class="sim-qa-buttons">
+              <button type="button" id="btn-repeat" class="btn-qa">🔁 Repetir</button>
+              <button type="button" id="btn-ask-estado" class="btn-qa">🏥 ¿Estado/Heridos?</button>
+              <button type="button" id="btn-ask-ubicacion" class="btn-qa">📍 ¿Dirección exacta?</button>
+              <button type="button" id="btn-ask-riesgos" class="btn-qa">⚠️ ¿Riesgos?</button>
+            </div>
+            <div id="sim-subtitle-box" class="subtitle-box hidden"></div>
+          </div>
+
+          <!-- Transferencia a Respuesta -->
           <div class="transfer-controls">
             <label>Transferir llamada a Op. Respuesta (ID Puesto):</label>
             <div class="transfer-row">
@@ -78,7 +107,7 @@
         </div>
 
         <div id="map" class="map-box"></div>
-        <div class="aml-info" id="aml-box">AML: Sin señal activa</div>
+        <div class="aml-info" id="aml-box">AML: Esperando llamada entrante...</div>
       </section>
 
       <section class="panel">
@@ -87,7 +116,7 @@
           <div class="form-row">
             <div>
               <label>Teléfono llamante</label>
-              <input type="text" id="f-telefono" value="+34 600 112 999" required />
+              <input type="text" id="f-telefono" placeholder="+34 6XX XXX XXX" required />
             </div>
             <div>
               <label>Prioridad</label>
