@@ -1,0 +1,90 @@
+:root {
+  --bg: #0f172a;
+  --panel: #1e293b;
+  --border: #334155;
+  --text: #f8fafc;
+  --muted: #94a3b8;
+  --red: #dc2626;
+  --green: #16a34a;
+  --blue: #2563eb;
+  --amber: #d97706;
+}
+* { box-sizing: border-box; font-family: system-ui, sans-serif; }
+body { margin: 0; background: var(--bg); color: var(--text); }
+
+.topbar {
+  display: flex; justify-content: space-between; align-items: center;
+  padding: 0.75rem 1.5rem; background: #020617; border-bottom: 2px solid var(--red);
+}
+.brand { display: flex; align-items: center; gap: 0.75rem; }
+.badge-112 {
+  background: var(--red); color: white; font-weight: 900;
+  padding: 0.35rem 0.65rem; border-radius: 6px; font-size: 1.2rem;
+}
+.brand small { display: block; color: var(--muted); font-size: 0.75rem; }
+
+.role-btn {
+  background: var(--panel); color: var(--text); border: 1px solid var(--border);
+  padding: 0.5rem 1rem; border-radius: 6px; cursor: pointer; margin: 0 0.2rem;
+}
+.role-btn.active { background: var(--red); border-color: var(--red); font-weight: bold; }
+
+.view { display: none; padding: 1.5rem; }
+.view.active { display: block; }
+
+.grid-2col { display: grid; grid-template-columns: 1fr 1.2fr; gap: 1.5rem; }
+.panel {
+  background: var(--panel); border: 1px solid var(--border);
+  border-radius: 10px; padding: 1.25rem;
+}
+.panel-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.75rem; }
+.id-pill { background: #0f172a; padding: 0.35rem 0.7rem; border-radius: 6px; font-size: 0.85rem; border: 1px solid var(--border); }
+
+label { display: block; margin-top: 0.75rem; margin-bottom: 0.25rem; font-size: 0.85rem; color: var(--muted); }
+input, select, textarea {
+  width: 100%; padding: 0.6rem; border-radius: 6px;
+  border: 1px solid var(--border); background: #0f172a; color: white;
+}
+.form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 0.75rem; }
+
+button { cursor: pointer; border: none; border-radius: 6px; font-weight: 600; }
+.btn-emergency {
+  width: 100%; margin-top: 1rem; padding: 1rem; background: var(--red);
+  color: white; font-size: 1.1rem;
+}
+.btn-primary { width: 100%; margin-top: 1rem; padding: 0.8rem; background: var(--blue); color: white; }
+.btn-success { padding: 0.5rem 1rem; background: var(--green); color: white; }
+.btn-secondary { width: 100%; margin-top: 0.5rem; padding: 0.7rem; background: #475569; color: white; }
+.btn-danger-sm { padding: 0.35rem 0.75rem; background: var(--red); color: white; font-size: 0.8rem; }
+.btn-transfer { padding: 0.6rem 1rem; background: var(--amber); color: white; white-space: nowrap; }
+.btn-transfer:hover { background: #b45309; }
+
+.phone-card { max-width: 450px; margin: 2rem auto; background: var(--panel); padding: 1.5rem; border-radius: 12px; }
+.map-box { height: 240px; border-radius: 8px; margin-top: 0.75rem; }
+.aml-info { margin-top: 0.5rem; font-size: 0.85rem; color: #38bdf8; }
+
+.incoming-box {
+  background: #450a0a; border: 1px solid var(--red); padding: 0.75rem;
+  border-radius: 8px; display: flex; justify-content: space-between; align-items: center;
+  margin-bottom: 0.75rem;
+}
+.transfer-alert { background: #451a03; border-color: var(--amber); }
+
+.active-call-box {
+  background: #052e16; border: 1px solid var(--green); padding: 0.75rem;
+  border-radius: 8px; margin-bottom: 0.75rem;
+}
+.call-live-header { display: flex; justify-content: space-between; align-items: center; }
+.transfer-controls label { margin-top: 0.5rem; color: #bbf7d0; }
+.transfer-row { display: flex; gap: 0.5rem; margin-top: 0.25rem; }
+
+.hidden { display: none !important; }
+
+.incidents-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(340px, 1fr)); gap: 1rem; }
+.incident-card {
+  background: #0f172a; border-left: 5px solid var(--red); padding: 1rem; border-radius: 8px;
+}
+.agencies-bar { display: flex; flex-wrap: wrap; gap: 0.4rem; margin-top: 0.75rem; }
+.agency-btn { padding: 0.35rem 0.6rem; font-size: 0.8rem; background: #334155; color: white; }
+.agency-btn.active { background: var(--green); }
+.log-list { font-size: 0.78rem; color: var(--muted); margin-top: 0.75rem; padding-left: 1rem; }
